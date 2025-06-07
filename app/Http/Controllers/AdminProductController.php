@@ -148,8 +148,33 @@ class AdminProductController extends Controller
 
     public function delete_category($id)
     {
-        CategoryProduct::where("id", "=", $id)->delete();
-        return redirect(route('list_cat'))->with('status', "Đã xóa danh mục thành công");
+        try {
+            $category = CategoryProduct::findOrFail($id);
+            
+            // Check if category has products
+            if ($category->products()->exists()) {
+                return redirect()
+                    ->route('list_cat')
+                    ->with('error', "Không thể xóa danh mục này vì có sản phẩm liên quan");
+            }
+
+            // Check if category has child categories
+            if (CategoryProduct::where('parent', $id)->exists()) {
+                return redirect()
+                    ->route('list_cat')
+                    ->with('error', "Không thể xóa danh mục này vì có danh mục con");
+            }
+
+            $category->delete();
+            return redirect()
+                ->route('list_cat')
+                ->with('status', "Đã xóa danh mục thành công");
+
+        } catch (\Exception $e) {
+            return redirect()
+                ->route('list_cat')
+                ->with('error', "Có lỗi xảy ra khi xóa danh mục");
+        }
     }
     // End Category product ==================================================================================
 
